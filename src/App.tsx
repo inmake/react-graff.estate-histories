@@ -1,5 +1,6 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 import { createRef, useEffect, useState } from "react";
+import { useInView } from "react-intersection-observer";
 import { useSwipeable } from "react-swipeable";
 
 interface IVideo {
@@ -53,7 +54,9 @@ function App() {
   const videoRefs = videos.map(() => createRef<HTMLVideoElement>());
   const [videoWidth, setVideoWidth] = useState<number>(0);
   const [videoHeigth, setVideoHeigth] = useState<number>(0);
-  const [_document, setDocument] = useState<Document>();
+  // const [_document, setDocument] = useState<Document>();
+  const { ref, inView } = useInView();
+  const [isEntered, setIsEntered] = useState(false);
 
   const handlers = useSwipeable({
     onSwipedLeft: next,
@@ -80,19 +83,35 @@ function App() {
   }
 
   useEffect(() => {
-    setDocument(document);
+    //
   }, []);
 
   useEffect(() => {
-    if (!_document) return;
-    if (videoRefs.length !== videos.length) return;
+    if (!inView || isEntered) return;
 
-    // TODO
-  }, [_document]);
+    setIsEntered(true);
+  }, [inView]);
+
+  useEffect(() => {
+    for (let index = 0; index < videoRefs.length; index++) {
+      if (selectedVideoIndex === index) {
+        videoRefs[index].current?.play();
+      } else {
+        videoRefs[index].current?.pause();
+      }
+    }
+  }, [isEntered, selectedVideoIndex]);
+
+  // useEffect(() => {
+  //   if (!_document) return;
+  //   if (videoRefs.length !== videos.length) return;
+
+  //   // TODO
+  // }, [_document]);
 
   return (
-    <div className="overflow-x-clip">
-      <div className="container mx-auto 2xl:max-w-screen-2xl">
+    <div className="overflow-x-clip h-[3000px]">
+      <div ref={ref} className="container mx-auto 2xl:max-w-screen-2xl">
         <div className="flex bg-gray-500 border-b 2xl:h-[760px] xl:h-[687px]">
           <div className="left bg-red-200 min-w-[496px] flex flex-col justify-between">
             <h2>Истории</h2>
@@ -125,7 +144,7 @@ function App() {
               >
                 <video
                   ref={videoRefs[index]}
-                  src={video.src}
+                  src={isEntered ? video.src : undefined}
                   poster={video.poster}
                   muted
                   loop
@@ -150,7 +169,9 @@ function App() {
                 >
                   <div
                     className="bg-white h-full"
-                    style={{ width: "25%" }}
+                    style={{
+                      width: `10%`,
+                    }}
                   ></div>
                 </div>
               </div>
